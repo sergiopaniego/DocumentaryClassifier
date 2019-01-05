@@ -8,7 +8,7 @@ from os import listdir
 
 
 def preprocess_document(doc):
-    stopset = set(stopwords.words('english'))
+    stopset = set(stopwords.words('spanish'))
     stemmer = PorterStemmer()
     tokens = wordpunct_tokenize(doc)
     clean = [token.lower() for token in tokens if token.lower() not in stopset and len(token) > 2]
@@ -63,11 +63,11 @@ def launch_query(corpus):
         # print()
 
 
-files = listdir('News/Cinema')
+files = listdir('News/Pollution')
 files_text = []
 print(len(files))
 for file in files:
-    file_object = open('News/Cinema/' + file, 'r')
+    file_object = open('News/Pollution/' + file, 'r')
     file_text = file_object.read()
     files_text.append(file_text)
     # print(file_text)

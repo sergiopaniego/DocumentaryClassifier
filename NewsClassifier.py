@@ -8,6 +8,11 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.stem.snowball import SnowballStemmer
+from nltk.tokenize import wordpunct_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from gensim import corpora, models, similarities
+from operator import itemgetter
 
 import Glossaries
 
@@ -110,6 +115,56 @@ def support_vector_machine(news):
     return predicted_probability, predicted_category
 
 
+def preprocess_document(doc):
+    stopset = set(stopwords.words('english'))
+    stemmer = PorterStemmer()
+    tokens = wordpunct_tokenize(doc)
+    clean = [token.lower() for token in tokens if token.lower() not in stopset and len(token) > 2]
+    final = [stemmer.stem(word) for word in clean]
+    return final
+
+
+# Creates the dictionary of words contained in the corpus given.
+def create_dictionary(processed_docs):
+    dictionary = corpora.Dictionary(processed_docs)
+    dictionary.save('vsm.dict')
+    return dictionary
+
+
+# Document to bag of words.
+# Creates the vectors of each text.
+def docs2bows(processed_docs, dictionary):
+    vectors = [dictionary.doc2bow(doc) for doc in processed_docs]
+    corpora.MmCorpus.serialize('vsm_docs.mm', vectors)
+    return vectors
+
+
+# Creates the tfidf for each concept
+def create_tf_idf_model(corpus):
+    processed_docs = [preprocess_document(doc) for doc in corpus]
+    dictionary = create_dictionary(processed_docs)
+    docs2bows(processed_docs, dictionary)
+    loaded_corpus = corpora.MmCorpus('vsm_docs.mm')
+    tfidf = models.TfidfModel(loaded_corpus)
+    return tfidf, dictionary
+
+
+def launch_query(corpus, q):
+    tfidf, dictionary = create_tf_idf_model(corpus)
+    loaded_corpus = corpora.MmCorpus('vsm_docs.mm')
+    index = similarities.MatrixSimilarity(loaded_corpus, num_features=len(dictionary))
+    pq = preprocess_document(q)
+    vq = dictionary.doc2bow(pq)
+    qtfidf = tfidf[vq]
+    sim = index[qtfidf]
+    ranking = sorted(enumerate(sim), key=itemgetter(1), reverse=True)
+    matched_words = 0
+    for doc, score in ranking:
+        if score > 0:
+            matched_words += 1
+    return matched_words
+
+
 print('¡Bienvenido al clasificador de noticias!\n')
 option = ''
 while option != '1':
@@ -124,6 +179,7 @@ while option != '1':
         print('Elige el método para clasificar la noticia')
         print('[0] Support Vector Machine')
         print('[1] Naïve Bayes')
+        print('[2] Vector Space Model')
         classifier_option = input()
         if classifier_option == '0':
             print('Support Vector Machine classification')
@@ -133,5 +189,16 @@ while option != '1':
             print('Naïve Bayes classification')
             predicted_prob, predicted_cat = naive_bayes_classifier(news_option)
             check_prediction_and_store(predicted_prob, predicted_cat, news_option)
+        elif classifier_option == '2':
+            matches = [('Basketball', launch_query(Glossaries.basketball_glossary, news_option)),
+                       ('Cinema', launch_query(Glossaries.cinema_glossary, news_option)),
+                       ('Pollution', launch_query(Glossaries.pollution_glossary, news_option))]
+            ranking = sorted(matches, key=itemgetter(1), reverse=True)
+            print(ranking)
+            if ranking[0][1] > 5:
+                store_news(news_option, ranking[0][0])
+            else:
+                store_news(news_option, 'Mix')
+
     elif option == '1':
         print('¡Adiós! Gracias por utilizar la herramienta')
