@@ -116,7 +116,7 @@ def support_vector_machine(news):
 
 
 def preprocess_document(doc):
-    stopset = set(stopwords.words('english'))
+    stopset = set(stopwords.words('spanish'))
     stemmer = PorterStemmer()
     tokens = wordpunct_tokenize(doc)
     clean = [token.lower() for token in tokens if token.lower() not in stopset and len(token) > 2]
@@ -165,6 +165,32 @@ def launch_query(corpus, q):
     return matched_words
 
 
+def check_vsm_accuracy():
+    files = os.listdir('News/Basketball')
+    features = []
+    output = []
+    print(len(files))
+    for file in files:
+        file_object = open('News/Basketball/' + file, 'r')
+        features.append(file_object.read())
+
+    for feature in features:
+        matches = [('Basketball', launch_query(Glossaries.basketball_glossary, feature)),
+                   ('Cinema', launch_query(Glossaries.cinema_glossary, feature)),
+                   ('Pollution', launch_query(Glossaries.pollution_glossary, feature))]
+
+        ranking = sorted(matches, key=itemgetter(1), reverse=True)
+        print(ranking)
+        if ranking[0][1] > 0:
+            output.append('Basketball')
+            # store_news(news_option, ranking[0][0])
+        else:
+            output.append('Mix')
+            # store_news(news_option, 'Mix')
+
+    print(output)
+
+
 print('¡Bienvenido al clasificador de noticias!\n')
 option = ''
 while option != '1':
@@ -195,7 +221,7 @@ while option != '1':
                        ('Pollution', launch_query(Glossaries.pollution_glossary, news_option))]
             ranking = sorted(matches, key=itemgetter(1), reverse=True)
             print(ranking)
-            if ranking[0][1] > 5:
+            if ranking[0][1] > 0:
                 store_news(news_option, ranking[0][0])
             else:
                 store_news(news_option, 'Mix')
