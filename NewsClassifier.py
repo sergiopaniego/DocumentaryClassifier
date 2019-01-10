@@ -49,7 +49,7 @@ def check_model_accuracy(clf, stemmed_count_vect, tfidf_transformer):
     # Check model accuracy with real articles
     files = os.listdir('News/Cinema')
     features = []
-    print(len(files))
+    # print(len(files))
     for file in files:
         file_object = open('News/Cinema/' + file, 'r')
         features.append(file_object.read())
@@ -61,7 +61,7 @@ def check_model_accuracy(clf, stemmed_count_vect, tfidf_transformer):
     # print(predicted)
     # print(type(test_labels))
     # print(test_labels)
-    print('Accuracy of the model ' + str(np.mean(predicted == test_labels)))
+    # print('Accuracy of the model ' + str(np.mean(predicted == test_labels)))
 
 
 def predict_news(clf, stemmed_count_vect, tfidf_transformer, news):
@@ -164,12 +164,11 @@ def launch_query(corpus, q):
             matched_words += 1
     return matched_words
 
-
 def check_vsm_accuracy():
     files = os.listdir('News/Basketball')
     features = []
     output = []
-    print(len(files))
+    # print(len(files))
     for file in files:
         file_object = open('News/Basketball/' + file, 'r')
         features.append(file_object.read())
@@ -180,16 +179,84 @@ def check_vsm_accuracy():
                    ('Pollution', launch_query(Glossaries.pollution_glossary, feature))]
 
         ranking = sorted(matches, key=itemgetter(1), reverse=True)
-        print(ranking)
+        # print(ranking)
         if ranking[0][1] > 0:
             output.append('Basketball')
             # store_news(news_option, ranking[0][0])
         else:
             output.append('Mix')
             # store_news(news_option, 'Mix')
+    # print(output)
 
-    print(output)
+'''
+def launch_query2(corpus, q):
+    tfidf, dictionary = create_tf_idf_model(corpus)
+    loaded_corpus = corpora.MmCorpus('vsm_docs.mm')
+    index = similarities.MatrixSimilarity(loaded_corpus, num_features=len(dictionary))
+    pq = preprocess_document(q)
+    vq = dictionary.doc2bow(pq)
+    qtfidf = tfidf[vq]
+    sim = index[qtfidf]
+    ranking = sorted(enumerate(sim), key=itemgetter(1), reverse=True)
+    return ranking
 
+
+def check_vsm_accuracy2():
+    files = os.listdir('News/Pollution')
+    features = []
+    output = []
+    print(len(files))
+    for file in files:
+        file_object = open('News/Pollution/' + file, 'r')
+        features.append(file_object.read())
+
+    for feature in features:
+        matches = [('Basketball', launch_query2(Glossaries.basketball_glossary, feature)),
+                   ('Cinema', launch_query2(Glossaries.cinema_glossary, feature)),
+                   ('Pollution', launch_query2(Glossaries.pollution_glossary, feature))]
+
+        # ranking = sorted(matches, key=itemgetter(1), reverse=True)
+        sum_basketball = 0
+        sum_cinema = 0
+        sum_pollution = 0
+        for word in matches[0][1]:
+            sum_basketball += word[1]
+        for word in matches[1][1]:
+            sum_cinema += word[1]
+        for word in matches[2][1]:
+            sum_pollution += word[1]
+        # print(matches)
+        total_sum = sum_basketball+sum_cinema+sum_pollution
+        percentage_basketball = sum_basketball/total_sum
+        percentage_cinema = sum_cinema / total_sum
+        percentage_pollution = sum_pollution / total_sum
+
+        print(str(percentage_basketball) + ' ' + str(percentage_cinema) + ' ' + str(percentage_pollution) + ' ')
+
+
+
+check_vsm_accuracy2()
+
+
+files = os.listdir('News/Cinema')
+print(len(files))
+correct = 0
+for file in files:
+    file_object = open('News/Cinema/' + file, 'r')
+    file_text = file_object.read()
+    # print(file_text)
+
+    predicted_prob, predicted_cat = support_vector_machine(file_text)
+    print(predicted_prob)
+    if predicted_prob[0][predicted_cat[0]] > 0.45:
+        # print(predicted_cat[0])
+        if predicted_cat[0] == 1:
+            correct += 1
+    # else:
+     #    print('Mix')
+
+print('Percentage ' + str(correct/30))
+'''
 
 print('¡Bienvenido al clasificador de noticias!\n')
 option = ''
@@ -216,11 +283,12 @@ while option != '1':
             predicted_prob, predicted_cat = naive_bayes_classifier(news_option)
             check_prediction_and_store(predicted_prob, predicted_cat, news_option)
         elif classifier_option == '2':
+            print('Vector Space Model')
             matches = [('Basketball', launch_query(Glossaries.basketball_glossary, news_option)),
                        ('Cinema', launch_query(Glossaries.cinema_glossary, news_option)),
                        ('Pollution', launch_query(Glossaries.pollution_glossary, news_option))]
             ranking = sorted(matches, key=itemgetter(1), reverse=True)
-            print(ranking)
+            # print(ranking)
             if ranking[0][1] > 0:
                 store_news(news_option, ranking[0][0])
             else:
